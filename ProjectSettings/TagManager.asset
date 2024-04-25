@@ -10,6 +10,7 @@ TagManager:
   - IaCar
   - Marcador
   - Blocks
+  - SpawnPoint
   layers:
   - Default
   - TransparentFX

@@ -44,6 +44,14 @@ public class CharacterAnimations : MonoBehaviour
         {
             Debug.LogError("ThirdPersonController script not found in the scene.");
         }
+        otherAnimator.enabled = false;
+        StartCoroutine(EnableAnimatorAfterDelay(5f));
+    }
+
+    private IEnumerator EnableAnimatorAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        otherAnimator.enabled = true;
     }
 
     void Update()
