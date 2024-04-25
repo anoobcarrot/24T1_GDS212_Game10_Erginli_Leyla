@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class WaterElement : MonoBehaviour
 {
@@ -23,6 +22,8 @@ public class WaterElement : MonoBehaviour
     public bool isCasting = false;
 
     public float emissionRadius = 10f;
+
+    public Image attackDurationFillBar; // Reference to the UI image fill bar
 
     void Start()
     {
@@ -72,6 +73,9 @@ public class WaterElement : MonoBehaviour
             // Clamp attack duration between 0 and 10 seconds
             attackDuration = Mathf.Clamp(attackDuration, 0f, 10f);
 
+            // Update the fill amount of the UI image fill bar
+            UpdateFillBar();
+
             // Rotate the emission point to face towards the player
             Vector3 directionToMouse = Camera.main.ScreenToWorldPoint(Input.mousePosition) - transform.position;
             directionToMouse.z = 0f; // Ensure the z-component is zero
@@ -99,6 +103,7 @@ public class WaterElement : MonoBehaviour
             {
                 attackDuration -= Time.deltaTime;
                 attackDuration = Mathf.Clamp(attackDuration, 0f, 10f); // Clamp attack duration between 0 and 10 seconds
+                UpdateFillBar(); // Update the fill amount of the UI image fill bar
             }
         }
 
@@ -109,6 +114,7 @@ public class WaterElement : MonoBehaviour
             player.GetComponent<WaterPower>().StopAllCoroutines();
             Destroy(waterBall);
             isCasting = false;
+            UpdateFillBar(); // Update the fill amount of the UI image fill bar
         }
 
         // Continuously check if the projectile button is pressed while the casting key is held down
@@ -131,7 +137,15 @@ public class WaterElement : MonoBehaviour
             {
                 Destroy(waterBall);
             }
+            UpdateFillBar(); // Update the fill amount of the UI image fill bar
+        }
+    }
+
+    void UpdateFillBar()
+    {
+        if (attackDurationFillBar != null)
+        {
+            attackDurationFillBar.fillAmount = attackDuration / 10f;
         }
     }
 }
-
