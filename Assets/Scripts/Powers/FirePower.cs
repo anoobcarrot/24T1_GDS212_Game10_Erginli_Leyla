@@ -65,7 +65,7 @@ public class FirePower : MonoBehaviour
             });
 
             Destroy(projectile, attackDuration);
-            projectileCooldownTimer = 1f;
+            projectileCooldownTimer = 2.5f;
             isProjectileOnCooldown = true;
 
             Debug.Log("Casting Fire power as projectile!");

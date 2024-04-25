@@ -21,6 +21,9 @@ public class WaterPower: MonoBehaviour
     // Vector3 waterBendTarget;
     // Vector3 waterTubeTarget;
 
+    public float projectileCooldownTimer = 0f;
+    public bool isProjectileOnCooldown = false;
+
     public KeyCode createWaterBallKey = KeyCode.Mouse0;
     public KeyCode throwWaterBallKey = KeyCode.Q;
 
@@ -28,6 +31,15 @@ public class WaterPower: MonoBehaviour
 
     private void Update()
     {
+        // Update cooldown timer
+        if (isProjectileOnCooldown)
+        {
+            projectileCooldownTimer -= Time.deltaTime;
+            if (projectileCooldownTimer <= 0)
+            {
+                isProjectileOnCooldown = false;
+            }
+        }
         // if (Input.GetKeyDown(createWaterBallKey))
         // {
         //     StopAllCoroutines();
@@ -95,7 +107,7 @@ public class WaterPower: MonoBehaviour
 
     public void AnimationCallback_ThrowBall()
     {
-        if (waterBallController.WaterBallCreated() && Input.GetKeyDown(throwWaterBallKey))
+        if (waterBallController.WaterBallCreated() && Input.GetKeyDown(throwWaterBallKey) && !isProjectileOnCooldown)
         {
             Vector3 forwardDirection = transform.forward;
             float throwDistance = 10f; // Adjust this value as needed
@@ -103,6 +115,8 @@ public class WaterPower: MonoBehaviour
             // Calculate the target position in front of the player
             Vector3 targetPosition = transform.position + forwardDirection * throwDistance;
 
+            projectileCooldownTimer = 2.5f;
+            isProjectileOnCooldown = true;
             isThrowing = true;
             waterBallController.ThrowWaterBall(targetPosition);
             isThrowing = false;

@@ -9,6 +9,14 @@ public class EnemyAI : MonoBehaviour
     public int maxHealth = 100;
     public GameObject healthBarPrefab;
 
+    // PROJECTILES
+
+    public GameObject projectilePrefab; // Prefab of the projectile object
+    public float projectileSpeed = 10f; // Speed of the projectile
+    public float fireRate = 1f; // Rate at which the enemy fires projectiles (in seconds)
+    public int projectileDamage = 10; // Damage inflicted by each projectile
+    private float nextFireTime; // Time when the enemy can fire next
+
     private Transform player;
     private NavMeshAgent agent;
     private int currentHealth;
@@ -24,7 +32,14 @@ public class EnemyAI : MonoBehaviour
         Transform canvasTransform = transform.Find("Enemy Canvas");
         if (canvasTransform != null)
         {
+            // Instantiate the health bar
             healthBar = Instantiate(healthBarPrefab, canvasTransform);
+
+            // Set the health bar's position above the enemy's head
+            Vector3 healthBarOffset = new Vector3(0f, 0f, 0f);
+            healthBar.transform.localPosition = healthBarOffset;
+
+            // Get the fill image component of the health bar
             healthBarFill = healthBar.GetComponentInChildren<Image>();
         }
         else
@@ -51,6 +66,36 @@ public class EnemyAI : MonoBehaviour
         {
             healthBar.transform.LookAt(player);
         }
+
+        // Check if it's time to fire
+        if (CanSeePlayer() && Time.time >= nextFireTime)
+        {
+            // Fire projectile at the player
+            FireProjectile();
+            // Set the next fire time
+            nextFireTime = Time.time + 1f / fireRate;
+        }
+    }
+
+    void FireProjectile()
+    {
+        // Spawn projectile at the enemy's position
+        GameObject projectile = Instantiate(projectilePrefab, transform.position, Quaternion.identity);
+
+        // Get the direction towards the player
+        Vector3 directionToPlayer = (player.position - transform.position).normalized;
+
+        // Get the rigidbody component of the projectile
+        Rigidbody projectileRigidbody = projectile.GetComponent<Rigidbody>();
+
+        // Disable gravity for the projectile
+        projectileRigidbody.useGravity = false;
+
+        // Set the velocity of the projectile to shoot towards the player
+        projectileRigidbody.velocity = directionToPlayer * projectileSpeed;
+
+        // Set the damage value of the projectile
+        projectile.GetComponent<Projectile>().damage = projectileDamage;
     }
 
     bool CanSeePlayer()

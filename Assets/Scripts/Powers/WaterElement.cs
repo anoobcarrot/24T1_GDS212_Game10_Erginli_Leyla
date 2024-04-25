@@ -14,14 +14,12 @@ public class WaterElement : MonoBehaviour
     public KeyCode projectileKey = KeyCode.Q;
 
     [SerializeField] private bool absorbing = false;
-    [SerializeField] private bool absorbingTrigger = false;
-    public float absorptionTimer = 0f; // ABSORPTION TIMER
     private GameObject player;
     private GameObject emissionPoint;
     private Quaternion emissionPointRotation;
     private ParticleSystem activeAbsorptionParticleEffect;
 
-    private float attackDuration = 0f;
+    [SerializeField] private float attackDuration = 0f;
     public bool isCasting = false;
 
     public float emissionRadius = 10f;
@@ -45,75 +43,44 @@ public class WaterElement : MonoBehaviour
 
     void Update()
     {
-        if (absorbing && absorbingTrigger)
+        if (Input.GetKeyDown(absorptionKey) && activeAbsorptionParticleEffect == null && !isCasting)
         {
-            absorptionTimer += Time.deltaTime;
-        }
-
-        if (absorbingTrigger)
-        {
-            if (Input.GetKeyDown(absorptionKey) && activeAbsorptionParticleEffect == null)
+            if (absorptionParticleEffectPrefab != null)
             {
-                if (absorptionParticleEffectPrefab != null)
-                {
-                    absorbing = true;
-                    activeAbsorptionParticleEffect = Instantiate(absorptionParticleEffectPrefab, emissionPoint.transform.position, emissionPointRotation, emissionPoint.transform);
-                }
-            }
-        }
-
-        if (player != null && emissionPoint != null && emissionPoint.transform.parent != null && absorbingTrigger && absorbing)
-        {
-            Vector3 directionToPlayer = player.transform.position - emissionPoint.transform.parent.position;
-            float distanceToPlayer = directionToPlayer.magnitude;
-
-            if (distanceToPlayer <= emissionRadius)
-            {
-                emissionPoint.transform.position = player.transform.position;
-            }
-            else
-            {
-                Vector3 closestPoint = emissionPoint.transform.parent.position + directionToPlayer.normalized * emissionRadius;
-                emissionPoint.transform.position = closestPoint;
+                absorbing = true;
+                activeAbsorptionParticleEffect = Instantiate(absorptionParticleEffectPrefab, emissionPoint.transform.position, emissionPointRotation, emissionPoint.transform);
             }
         }
 
         if (Input.GetKeyUp(absorptionKey))
         {
             absorbing = false;
-
+            // Stop active absorption particle effect
             if (activeAbsorptionParticleEffect != null)
             {
                 activeAbsorptionParticleEffect.Stop();
                 Destroy(activeAbsorptionParticleEffect.gameObject);
                 activeAbsorptionParticleEffect = null;
             }
-
-            attackDuration = absorptionTimer;
-            Debug.Log("Attack duration: " + attackDuration);
-            absorptionTimer = 0f; // Reset absorption timer
         }
 
-        if (attackDuration <= 0)
-            {
-                isCasting = false;
-            }
-        
-        else
+        if (absorbing && !isCasting)
         {
-            absorptionTimer = 0f; // Reset the absorption timer if not absorbing
+            // Increment absorption timer while absorbing
+            attackDuration += Time.deltaTime;
+
+            // Clamp attack duration between 0 and 10 seconds
+            attackDuration = Mathf.Clamp(attackDuration, 0f, 10f);
+
+            // Rotate the emission point to face towards the player
+            Vector3 directionToMouse = Camera.main.ScreenToWorldPoint(Input.mousePosition) - transform.position;
+            directionToMouse.z = 0f; // Ensure the z-component is zero
+            emissionPointRotation = Quaternion.LookRotation(directionToMouse);
+            emissionPoint.transform.rotation = emissionPointRotation;
         }
 
-        Debug.Log("Current attack duration: " + attackDuration);
-        if (player != null && Input.GetKey(castingKey))
-        {
-            if (attackDuration > 0)
-            {
-                attackDuration -= Time.deltaTime;
-            }
-        }
-
-        if (player != null && Input.GetKeyDown(castingKey))
+        // Casting attack (pressing the casting key)
+        if (Input.GetKeyDown(castingKey) && !absorbing && !isCasting)
         {
             WaterPower waterPower = player.GetComponent<WaterPower>();
             if (attackDuration > 0)
@@ -125,23 +92,13 @@ public class WaterElement : MonoBehaviour
             }
         }
 
-        if (player != null && Input.GetKey(castingKey) && Input.GetKeyDown(projectileKey))
+        // Decrease attack duration while casting (holding down the casting key)
+        if (Input.GetKey(castingKey))
         {
-            if (isCasting && attackDuration > 0)
+            if (attackDuration > 0 && !absorbing)
             {
-                // player.GetComponent<WaterPower>().StopAllCoroutines();
-                player.GetComponent<WaterPower>().AnimationCallback_ThrowBall();
-            }
-        }
-
-        if (Input.GetKeyUp(castingKey))
-        {
-            GameObject waterBall = GameObject.Find("WaterBall(Clone)");
-            attackDuration = 0f; // Reset attack duration
-            player.GetComponent<WaterPower>().StopAllCoroutines();
-            if (waterBall != null)
-            {
-                Destroy(waterBall);
+                attackDuration -= Time.deltaTime;
+                attackDuration = Mathf.Clamp(attackDuration, 0f, 10f); // Clamp attack duration between 0 and 10 seconds
             }
         }
 
@@ -151,43 +108,30 @@ public class WaterElement : MonoBehaviour
             attackDuration = 0f; // Reset attack duration
             player.GetComponent<WaterPower>().StopAllCoroutines();
             Destroy(waterBall);
+            isCasting = false;
         }
 
-        if (absorbingTrigger)
+        // Continuously check if the projectile button is pressed while the casting key is held down
+        if (Input.GetKey(castingKey) && Input.GetKeyDown(projectileKey))
         {
-            // Rotate the emission point to face towards the player
-            if (player != null)
+            if (isCasting && attackDuration > 0 && !absorbing)
             {
-                Vector3 directionToPlayer = player.transform.position - emissionPoint.transform.position;
-                emissionPointRotation = Quaternion.LookRotation(directionToPlayer);
-                emissionPoint.transform.rotation = emissionPointRotation;
+                // player.GetComponent<WaterPower>().StopAllCoroutines();
+                player.GetComponent<WaterPower>().AnimationCallback_ThrowBall();
             }
         }
-    }
 
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
+        if (Input.GetKeyUp(castingKey) && !absorbing)
         {
-            absorbingTrigger = true;
-            player = other.gameObject;
-        }
-    }
-
-    void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            // Stop absorbing when player exits absorption radius
-            absorbingTrigger = false;
-            // Stop active absorption particle effect
-            if (activeAbsorptionParticleEffect != null)
+            isCasting = false;
+            attackDuration = 0f; // Reset attack duration
+            GameObject waterBall = GameObject.Find("WaterBall(Clone)");
+            player.GetComponent<WaterPower>().StopAllCoroutines();
+            if (waterBall != null)
             {
-                activeAbsorptionParticleEffect.Stop();
-                Destroy(activeAbsorptionParticleEffect.gameObject);
-                activeAbsorptionParticleEffect = null;
+                Destroy(waterBall);
             }
-            player = null;
         }
     }
 }
+
