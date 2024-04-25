@@ -6,6 +6,10 @@ TagManager:
   tags:
   - CinemachineTarget
   - Enemy
+  - Stop
+  - IaCar
+  - Marcador
+  - Blocks
   layers:
   - Default
   - TransparentFX
@@ -14,7 +18,7 @@ TagManager:
   - Water
   - UI
   - Fire
-  - 
+  - Post Processing
   - 
   - 
   - 
